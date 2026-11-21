@@ -355,15 +355,42 @@
 
         // GrapX Models 預設連線資訊
         const GRAPX_DEFAULT_URL = 'https://app.g-rapx.com/v1/chat/completions';
-        const GRAPX_DEFAULT_KEY = 'grx-LeFwEmHugqPIe_eiqbJL7iwLl5NCUBJM';
 
-        // 設定檔 (從 localStorage 載入)
+        // ==========================================
+        // API Key 一律存放於 Cookie (不寫入程式碼)
+        // ==========================================
+        const API_KEY_COOKIES = ['poc_gemini_key', 'poc_openai_key', 'poc_claude_key', 'poc_grapx_key'];
+
+        function getCookie(name) {
+            const match = document.cookie.split('; ').find(c => c.startsWith(name + '='));
+            return match ? decodeURIComponent(match.slice(name.length + 1)) : '';
+        }
+
+        function setCookie(name, value, days = 365) {
+            const secure = location.protocol === 'https:' ? '; Secure' : '';
+            if (value) {
+                document.cookie = `${name}=${encodeURIComponent(value)}; max-age=${days * 86400}; path=/; SameSite=Strict${secure}`;
+            } else {
+                document.cookie = `${name}=; max-age=0; path=/; SameSite=Strict${secure}`;
+            }
+        }
+
+        // 舊版曾將金鑰存在 localStorage：搬移至 Cookie 後刪除
+        API_KEY_COOKIES.forEach(name => {
+            const legacy = localStorage.getItem(name);
+            if (legacy !== null) {
+                if (legacy && !getCookie(name)) setCookie(name, legacy);
+                localStorage.removeItem(name);
+            }
+        });
+
+        // 設定檔 (金鑰從 Cookie 載入，其餘設定從 localStorage 載入)
         let appConfig = {
-            geminiKey: localStorage.getItem('poc_gemini_key') || '',
-            openaiKey: localStorage.getItem('poc_openai_key') || '',
-            claudeKey: localStorage.getItem('poc_claude_key') || '',
+            geminiKey: getCookie('poc_gemini_key'),
+            openaiKey: getCookie('poc_openai_key'),
+            claudeKey: getCookie('poc_claude_key'),
             grapxUrl: localStorage.getItem('poc_grapx_url') || GRAPX_DEFAULT_URL,
-            grapxKey: localStorage.getItem('poc_grapx_key') || GRAPX_DEFAULT_KEY,
+            grapxKey: getCookie('poc_grapx_key'),
             grapxCustomModel: localStorage.getItem('poc_grapx_custom') || 'gpt-oss-120b'
         };
 
@@ -1040,7 +1067,10 @@ ${contextText}`,
             if (provider === 'grapx') {
                 const targetModel = modelName === 'custom' ? (appConfig.grapxCustomModel || 'gpt-oss-120b') : modelName;
                 const apiUrl = appConfig.grapxUrl || GRAPX_DEFAULT_URL;
-                const apiKey = appConfig.grapxKey || GRAPX_DEFAULT_KEY;
+                const apiKey = appConfig.grapxKey;
+                if (!apiKey) {
+                    throw new Error('尚未設定 GrapX API Key，請點擊左下角「模型 API 金鑰 & GrapX 設定」輸入您的 grx-... 金鑰。');
+                }
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
@@ -1195,18 +1225,25 @@ ${contextText}`,
             appConfig.openaiKey = document.getElementById('cfgOpenaiKey').value.trim();
             appConfig.claudeKey = document.getElementById('cfgClaudeKey').value.trim();
             appConfig.grapxUrl = document.getElementById('cfgGrapxUrl').value.trim() || GRAPX_DEFAULT_URL;
-            appConfig.grapxKey = document.getElementById('cfgGrapxKey').value.trim() || GRAPX_DEFAULT_KEY;
+            appConfig.grapxKey = document.getElementById('cfgGrapxKey').value.trim();
             appConfig.grapxCustomModel = document.getElementById('cfgGrapxCustomModel').value.trim();
 
-            localStorage.setItem('poc_gemini_key', appConfig.geminiKey);
-            localStorage.setItem('poc_openai_key', appConfig.openaiKey);
-            localStorage.setItem('poc_claude_key', appConfig.claudeKey);
+            // API Key 寫入 Cookie
+            setCookie('poc_gemini_key', appConfig.geminiKey);
+            setCookie('poc_openai_key', appConfig.openaiKey);
+            setCookie('poc_claude_key', appConfig.claudeKey);
+            setCookie('poc_grapx_key', appConfig.grapxKey);
+            // 非機密設定仍存 localStorage
             localStorage.setItem('poc_grapx_url', appConfig.grapxUrl);
-            localStorage.setItem('poc_grapx_key', appConfig.grapxKey);
             localStorage.setItem('poc_grapx_custom', appConfig.grapxCustomModel);
 
             closeModal('settingsModal');
-            showToast('模型 API 與 GrapX 設定已儲存！', 'success');
+            const anyKey = appConfig.geminiKey || appConfig.openaiKey || appConfig.claudeKey || appConfig.grapxKey;
+            if (anyKey && !document.cookie) {
+                showToast('瀏覽器未保存 Cookie (以 file:// 直接開啟時常見)，金鑰僅在本次頁面有效，請改用 http://localhost 開啟。', 'error');
+            } else {
+                showToast('模型 API 與 GrapX 設定已儲存！', 'success');
+            }
             checkAllModels(true);
         }
 
@@ -1264,10 +1301,11 @@ ${contextText}`,
 
         // GrapX 一次取得可用模型清單
         async function fetchGrapxModelIds() {
+            if (!appConfig.grapxKey) return null;
             try {
                 const modelsUrl = (appConfig.grapxUrl || GRAPX_DEFAULT_URL).replace(/\/chat\/completions\/?$/, '/models');
                 const res = await fetchWithTimeout(modelsUrl, {
-                    headers: { 'Authorization': `Bearer ${appConfig.grapxKey || GRAPX_DEFAULT_KEY}` }
+                    headers: { 'Authorization': `Bearer ${appConfig.grapxKey}` }
                 });
                 if (!res.ok) return null;
                 const data = await res.json();
