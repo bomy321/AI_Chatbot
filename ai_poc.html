@@ -62,7 +62,7 @@
                         <i data-lucide="cpu" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h1 class="font-bold text-slate-900 text-base leading-tight">Multi-AI RAG</h1>
+                        <h1 class="font-bold text-slate-900 text-base leading-tight">CPU Multi-AI RAG</h1>
                         <span class="text-[11px] font-medium text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md">SQLite + Vector POC</span>
                     </div>
                 </div>
@@ -155,7 +155,7 @@
             <button onclick="openSettingsModal()" class="w-full py-2 px-3 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer">
                 <span class="flex items-center gap-2">
                     <i data-lucide="key-round" class="w-3.5 h-3.5 text-amber-500"></i>
-                    模型 API 金鑰 & Ollama 設定
+                    模型 API 金鑰 & GrapX 設定
                 </span>
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
             </button>
@@ -186,24 +186,36 @@
 
                 <!-- 多模 AI 模型選擇器 -->
                 <div class="relative">
-                    <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">AI 模型引擎</label>
+                    <label class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+                        AI 模型引擎
+                        <button type="button" id="modelStatusBtn" onclick="checkAllModels(true)" title="點擊重新檢測連線" class="inline-flex items-center gap-1 normal-case tracking-normal font-medium cursor-pointer hover:text-slate-600">
+                            <span id="modelStatusDot" class="w-2 h-2 rounded-full bg-slate-300"></span>
+                            <span id="modelStatusText">檢測中…</span>
+                        </button>
+                    </label>
                     <select id="modelSelector" onchange="updateModelBadge()" class="appearance-none bg-slate-100 hover:bg-slate-200/70 text-slate-800 text-xs sm:text-sm font-semibold py-1.5 pl-3 pr-8 rounded-xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 cursor-pointer transition-colors">
                         <optgroup label="Google Gemini">
-                            <option value="gemini:gemini-3-flash-preview" selected>Gemini 3 Flash (內建免設 Key 可用)</option>
-                            <option value="gemini:gemini-2.5-pro">Gemini 2.5 Pro</option>
+                            <option value="gemini:gemini-3-flash-preview" selected>Gemini 3 Flash</option>
+                            <option value="gemini:gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
                         </optgroup>
                         <optgroup label="OpenAI ChatGPT">
                             <option value="openai:gpt-4o">ChatGPT (GPT-4o)</option>
                             <option value="openai:gpt-4o-mini">ChatGPT (GPT-4o Mini)</option>
                         </optgroup>
                         <optgroup label="Anthropic Claude">
-                            <option value="claude:claude-3-5-sonnet-latest">Claude 3.5 Sonnet</option>
-                            <option value="claude:claude-3-5-haiku-latest">Claude 3.5 Haiku</option>
+                            <option value="claude:claude-sonnet-4-5">Claude Sonnet 4.5</option>
+                            <option value="claude:claude-opus-4-5">Claude Opus 4.5</option>
+                            <option value="claude:claude-haiku-4-5">Claude Haiku 4.5</option>
                         </optgroup>
-                        <optgroup label="本地端 Ollama">
-                            <option value="ollama:qwen2.5">Ollama (Qwen 2.5 本地端)</option>
-                            <option value="ollama:llama3.2">Ollama (Llama 3.2 本地端)</option>
-                            <option value="ollama:custom">Ollama (自訂模型名稱)</option>
+                        <optgroup label="GrapX Models">
+                            <option value="grapx:gpt-oss-120b">GrapX (GPT-OSS 120B)</option>
+                            <option value="grapx:gpt-oss-20b">GrapX (GPT-OSS 20B)</option>
+                            <option value="grapx:Gemma-3-TAIDE-12b-Chat-2602">GrapX (Gemma 3 TAIDE 12B 繁中)</option>
+                            <option value="grapx:gemma-4-31B-it">GrapX (Gemma 4 31B)</option>
+                            <option value="grapx:Llama-3.3-70B-Instruct">GrapX (Llama 3.3 70B)</option>
+                            <option value="grapx:Mistral-Large-3-675B-Instruct-2512">GrapX (Mistral Large 3)</option>
+                            <option value="grapx:NVIDIA-Nemotron-3-Super-120B-A12B">GrapX (Nemotron 3 Super 120B)</option>
+                            <option value="grapx:custom">GrapX (自訂模型名稱)</option>
                         </optgroup>
                     </select>
                     <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 absolute right-2.5 bottom-2 pointer-events-none"></i>
@@ -264,13 +276,13 @@
     <!-- 通知訊息框 (取代 alert) -->
     <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- 彈窗 1：API 金鑰與 Ollama 設定 -->
+    <!-- 彈窗 1：API 金鑰與 GrapX 設定 -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 class="font-bold text-slate-900 flex items-center gap-2">
                     <i data-lucide="sliders" class="w-5 h-5 text-indigo-600"></i>
-                    多模型 API 與本地 Ollama 設定
+                    多模型 API 與 GrapX Models 設定
                 </h3>
                 <button onclick="closeModal('settingsModal')" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -291,13 +303,16 @@
                     <input type="password" id="cfgClaudeKey" placeholder="sk-ant-..." class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500">
                 </div>
                 <div class="pt-2 border-t border-slate-100">
-                    <label class="block font-semibold text-slate-700 mb-1">本地 Ollama 服務位址 (Endpoint)</label>
-                    <input type="text" id="cfgOllamaUrl" value="http://localhost:11434" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500">
-                    <p class="text-[11px] text-slate-400 mt-1">若從瀏覽器直接連線本地 Ollama，請確保啟動時設定環境變數 <code class="bg-slate-100 px-1 rounded">OLLAMA_ORIGINS="*"</code>。</p>
+                    <label class="block font-semibold text-slate-700 mb-1">GrapX Models API Endpoint</label>
+                    <input type="text" id="cfgGrapxUrl" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500">
                 </div>
                 <div>
-                    <label class="block font-semibold text-slate-700 mb-1">Ollama 自訂模型名稱</label>
-                    <input type="text" id="cfgOllamaCustomModel" placeholder="例如：deepseek-r1:8b 或 mistral" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500">
+                    <label class="block font-semibold text-slate-700 mb-1">GrapX Models API Key</label>
+                    <input type="password" id="cfgGrapxKey" placeholder="grx-..." class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">GrapX 自訂模型名稱</label>
+                    <input type="text" id="cfgGrapxCustomModel" placeholder="例如：NVIDIA-Nemotron-3-Ultra-550B-A55B" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500">
                 </div>
             </div>
 
@@ -338,13 +353,18 @@
         let currentRagMode = 'hybrid'; // 'none' | 'strict' | 'hybrid'
         let vectorStore = []; // 向量資料庫切片陣列: { id, docId, source, text, tokens, vector, norm }
 
+        // GrapX Models 預設連線資訊
+        const GRAPX_DEFAULT_URL = 'https://app.g-rapx.com/v1/chat/completions';
+        const GRAPX_DEFAULT_KEY = 'grx-LeFwEmHugqPIe_eiqbJL7iwLl5NCUBJM';
+
         // 設定檔 (從 localStorage 載入)
         let appConfig = {
             geminiKey: localStorage.getItem('poc_gemini_key') || '',
             openaiKey: localStorage.getItem('poc_openai_key') || '',
             claudeKey: localStorage.getItem('poc_claude_key') || '',
-            ollamaUrl: localStorage.getItem('poc_ollama_url') || 'http://localhost:11434',
-            ollamaCustomModel: localStorage.getItem('poc_ollama_custom') || 'llama3.2'
+            grapxUrl: localStorage.getItem('poc_grapx_url') || GRAPX_DEFAULT_URL,
+            grapxKey: localStorage.getItem('poc_grapx_key') || GRAPX_DEFAULT_KEY,
+            grapxCustomModel: localStorage.getItem('poc_grapx_custom') || 'gpt-oss-120b'
         };
 
         // 設定 PDF.js Worker
@@ -818,7 +838,7 @@ ${contextText}`,
                         </div>
                         <h2 class="text-xl font-bold text-slate-800">多模 AI 知識庫對話系統</h2>
                         <p class="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                            已內建「公司差旅與專案規範」範例向量庫。您可以切換上方不同模型（Gemini、ChatGPT、Claude、Ollama）與三種知識庫檢索模式進行測試！
+                            已內建「公司差旅與專案規範」範例向量庫。您可以切換上方不同模型（Gemini、ChatGPT、Claude、GrapX）與三種知識庫檢索模式進行測試！
                         </p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full pt-2 text-left text-xs">
                             <button onclick="quickPrompt('鳳凰計畫的負責人是誰？預算多少？')" class="p-3 bg-white hover:bg-indigo-50/60 border border-slate-200 rounded-xl transition-colors cursor-pointer">
@@ -905,7 +925,7 @@ ${contextText}`,
         }
 
         // ==========================================
-        // 7. 多模型 API 路由呼叫引擎 (Gemini / ChatGPT / Claude / Ollama)
+        // 7. 多模型 API 路由呼叫引擎 (Gemini / ChatGPT / Claude / GrapX)
         // ==========================================
         async function callLlmRouter(provider, modelName, systemPrompt, historyMessages, userMessage) {
             // 組合對話歷史
@@ -1016,30 +1036,34 @@ ${contextText}`,
                 return data.content[0].text;
             }
 
-            // 4. 本地 Ollama API
-            if (provider === 'ollama') {
-                const targetModel = modelName === 'custom' ? (appConfig.ollamaCustomModel || 'llama3.2') : modelName;
-                const baseUrl = appConfig.ollamaUrl.replace(/\/$/, '');
-                try {
-                    const response = await fetch(`${baseUrl}/api/chat`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            model: targetModel,
-                            stream: false,
-                            messages: [
-                                { role: 'system', content: systemPrompt },
-                                ...formattedHistory,
-                                { role: 'user', content: userMessage }
-                            ]
-                        })
-                    });
-                    if (!response.ok) throw new Error(`Ollama 回應狀態碼 ${response.status}`);
-                    const data = await response.json();
-                    return data.message.content;
-                } catch (err) {
-                    throw new Error(`無法連線至本地 Ollama (${baseUrl})。請確認本機已啟動 Ollama 並設定 OLLAMA_ORIGINS="*"。原始錯誤: ${err.message}`);
+            // 4. GrapX Models API (OpenAI 相容格式)
+            if (provider === 'grapx') {
+                const targetModel = modelName === 'custom' ? (appConfig.grapxCustomModel || 'gpt-oss-120b') : modelName;
+                const apiUrl = appConfig.grapxUrl || GRAPX_DEFAULT_URL;
+                const apiKey = appConfig.grapxKey || GRAPX_DEFAULT_KEY;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: targetModel,
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            ...formattedHistory,
+                            { role: 'user', content: userMessage }
+                        ]
+                    })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    const errMsg = data.error?.message || data.detail || `GrapX API 錯誤 (${response.status})`;
+                    throw new Error(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
                 }
+                const text = data.choices?.[0]?.message?.content;
+                if (!text) throw new Error('GrapX 回傳內容為空');
+                return text;
             }
 
             throw new Error('不支援的模型供應商');
@@ -1098,7 +1122,8 @@ ${contextText}`,
                 // 解析選擇的模型
                 const modelVal = document.getElementById('modelSelector').value;
                 const [provider, modelName] = modelVal.split(':');
-                const modelLabel = document.getElementById('modelSelector').selectedOptions[0].text;
+                const selectedOpt = document.getElementById('modelSelector').selectedOptions[0];
+                const modelLabel = selectedOpt.dataset.label || selectedOpt.text;
 
                 // 執行 RAG 檢索與 Prompt 組裝
                 const { systemPrompt, retrievedChunks } = buildRagPromptAndContext(text);
@@ -1158,8 +1183,9 @@ ${contextText}`,
             document.getElementById('cfgGeminiKey').value = appConfig.geminiKey;
             document.getElementById('cfgOpenaiKey').value = appConfig.openaiKey;
             document.getElementById('cfgClaudeKey').value = appConfig.claudeKey;
-            document.getElementById('cfgOllamaUrl').value = appConfig.ollamaUrl;
-            document.getElementById('cfgOllamaCustomModel').value = appConfig.ollamaCustomModel;
+            document.getElementById('cfgGrapxUrl').value = appConfig.grapxUrl;
+            document.getElementById('cfgGrapxKey').value = appConfig.grapxKey;
+            document.getElementById('cfgGrapxCustomModel').value = appConfig.grapxCustomModel;
             document.getElementById('settingsModal').classList.remove('hidden');
             document.getElementById('settingsModal').classList.add('flex');
         }
@@ -1168,17 +1194,132 @@ ${contextText}`,
             appConfig.geminiKey = document.getElementById('cfgGeminiKey').value.trim();
             appConfig.openaiKey = document.getElementById('cfgOpenaiKey').value.trim();
             appConfig.claudeKey = document.getElementById('cfgClaudeKey').value.trim();
-            appConfig.ollamaUrl = document.getElementById('cfgOllamaUrl').value.trim() || 'http://localhost:11434';
-            appConfig.ollamaCustomModel = document.getElementById('cfgOllamaCustomModel').value.trim();
+            appConfig.grapxUrl = document.getElementById('cfgGrapxUrl').value.trim() || GRAPX_DEFAULT_URL;
+            appConfig.grapxKey = document.getElementById('cfgGrapxKey').value.trim() || GRAPX_DEFAULT_KEY;
+            appConfig.grapxCustomModel = document.getElementById('cfgGrapxCustomModel').value.trim();
 
             localStorage.setItem('poc_gemini_key', appConfig.geminiKey);
             localStorage.setItem('poc_openai_key', appConfig.openaiKey);
             localStorage.setItem('poc_claude_key', appConfig.claudeKey);
-            localStorage.setItem('poc_ollama_url', appConfig.ollamaUrl);
-            localStorage.setItem('poc_ollama_custom', appConfig.ollamaCustomModel);
+            localStorage.setItem('poc_grapx_url', appConfig.grapxUrl);
+            localStorage.setItem('poc_grapx_key', appConfig.grapxKey);
+            localStorage.setItem('poc_grapx_custom', appConfig.grapxCustomModel);
 
             closeModal('settingsModal');
-            showToast('模型 API 與 Ollama 設定已儲存！', 'success');
+            showToast('模型 API 與 GrapX 設定已儲存！', 'success');
+            checkAllModels(true);
+        }
+
+        // ==========================================
+        // 模型自動連線檢測 (綠點=可連線 / 紅點=無法連線)
+        // ==========================================
+        let modelStatusCache = {}; // { 'provider:model': true | false }
+        let modelCheckRunId = 0;
+
+        async function fetchWithTimeout(url, options = {}, ms = 10000) {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), ms);
+            try {
+                return await fetch(url, { ...options, signal: ctrl.signal });
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        // 檢測單一模型：只查詢模型資訊，不消耗生成額度
+        async function checkModelConnection(provider, modelName, grapxModelIds) {
+            try {
+                if (provider === 'gemini') {
+                    // 金鑰留空時仍嘗試連線 (部分環境會自動注入金鑰)
+                    const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}?key=${appConfig.geminiKey}`);
+                    return res.ok;
+                }
+                if (provider === 'openai') {
+                    if (!appConfig.openaiKey) return false;
+                    const res = await fetchWithTimeout(`https://api.openai.com/v1/models/${modelName}`, {
+                        headers: { 'Authorization': `Bearer ${appConfig.openaiKey}` }
+                    });
+                    return res.ok;
+                }
+                if (provider === 'claude') {
+                    if (!appConfig.claudeKey) return false;
+                    const res = await fetchWithTimeout(`https://api.anthropic.com/v1/models/${modelName}`, {
+                        headers: {
+                            'x-api-key': appConfig.claudeKey,
+                            'anthropic-version': '2023-06-01',
+                            'anthropic-dangerous-direct-browser-access': 'true'
+                        }
+                    });
+                    return res.ok;
+                }
+                if (provider === 'grapx') {
+                    const target = modelName === 'custom' ? appConfig.grapxCustomModel : modelName;
+                    return !!grapxModelIds && grapxModelIds.has(target);
+                }
+            } catch (err) {
+                return false;
+            }
+            return false;
+        }
+
+        // GrapX 一次取得可用模型清單
+        async function fetchGrapxModelIds() {
+            try {
+                const modelsUrl = (appConfig.grapxUrl || GRAPX_DEFAULT_URL).replace(/\/chat\/completions\/?$/, '/models');
+                const res = await fetchWithTimeout(modelsUrl, {
+                    headers: { 'Authorization': `Bearer ${appConfig.grapxKey || GRAPX_DEFAULT_KEY}` }
+                });
+                if (!res.ok) return null;
+                const data = await res.json();
+                return new Set((data.data || []).map(m => m.id));
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function renderModelOptionStatus(option) {
+            if (!option.dataset.label) option.dataset.label = option.text;
+            const status = modelStatusCache[option.value];
+            const prefix = status === true ? '🟢 ' : status === false ? '🔴 ' : '⚪ ';
+            option.text = prefix + option.dataset.label;
+        }
+
+        // 更新模型選擇器旁的狀態燈號
+        function updateModelBadge() {
+            const select = document.getElementById('modelSelector');
+            const dot = document.getElementById('modelStatusDot');
+            const text = document.getElementById('modelStatusText');
+            const status = modelStatusCache[select.value];
+            dot.className = 'w-2 h-2 rounded-full ' + (
+                status === true ? 'bg-emerald-500' :
+                status === false ? 'bg-rose-500' : 'bg-slate-300 animate-pulse'
+            );
+            text.textContent = status === true ? '連線正常' : status === false ? '無法連線' : '檢測中…';
+            text.className = status === true ? 'text-emerald-600' : status === false ? 'text-rose-600' : '';
+        }
+
+        // 檢測所有模型連線狀態
+        async function checkAllModels(showResult = false) {
+            const runId = ++modelCheckRunId;
+            const options = Array.from(document.getElementById('modelSelector').options);
+            modelStatusCache = {};
+            options.forEach(renderModelOptionStatus);
+            updateModelBadge();
+
+            const grapxModelIds = await fetchGrapxModelIds();
+            await Promise.all(options.map(async (opt) => {
+                const [provider, modelName] = opt.value.split(':');
+                const ok = await checkModelConnection(provider, modelName, grapxModelIds);
+                if (runId !== modelCheckRunId) return; // 已有較新的檢測
+                modelStatusCache[opt.value] = ok;
+                renderModelOptionStatus(opt);
+                updateModelBadge();
+            }));
+
+            if (showResult && runId === modelCheckRunId) {
+                const okCount = Object.values(modelStatusCache).filter(Boolean).length;
+                showToast(`模型連線檢測完成：${okCount} / ${options.length} 個可用`, 'info');
+            }
         }
 
         function closeModal(id) {
@@ -1275,6 +1416,7 @@ ${contextText}`,
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             initDatabase();
+            checkAllModels();
         });
     </script>
 </body>
